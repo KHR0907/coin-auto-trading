@@ -5,11 +5,11 @@ from datetime import datetime
 all = pybithumb.get_current_price("ALL")
 sort_all = sorted(all.items(), key=lambda x: float(x[1]['fluctate_rate_24H']), reverse=True)
 
-cycle_time = 15  # 매수를 위해서 X 초 간격으로 체크
-ascent = 3  # % 상승
+cycle_time = 10  # 매수를 위해서 X 초 간격으로 체크
+ascent = 2  # % 상승
 
-sell_ascent = 5  # 매수후 % 상승 후 매도
-stop_loss = -3  # % 하락일 경우 매도
+sell_ascent = 3.5  # 매수후 % 상승 후 매도
+stop_loss = -2.6  # % 하락일 경우 매도
 
 sell_cycle_time = 1  # 파는 간격을 초 간격으로 체크
 sell_time = 50  # 초 안에는 무조건 팔기

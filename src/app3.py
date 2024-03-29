@@ -5,10 +5,10 @@ from datetime import datetime
 all = pybithumb.get_current_price("ALL")
 sort_all = sorted(all.items(), key=lambda x: float(x[1]['fluctate_rate_24H']), reverse=True)
 
-cycle_time = 4  # 매수를 위해서 X 초 간격으로 체크
-ascent = 0.3  # % 상승
+cycle_time = 7  # 매수를 위해서 X 초 간격으로 체크
+ascent = 1.3  # % 상승
 
-sell_ascent = 1.5  # 매수후 % 상승 후 매도
+sell_ascent = 2  # 매수후 % 상승 후 매도
 stop_loss = -1  # % 하락일 경우 매도
 
 sell_cycle_time = 1  # 파는 간격을 초 간격으로 체크
@@ -25,31 +25,31 @@ while True:
     prev_ticker = ''
     prev_rate = 0
     prev_dict = {'ticker': 0}
+    vol = {'ticker': 0}
 
     for ticker, data in sort_all:
         prev_dict[ticker] = data['closing_price']
-        vol = float(data['acc_trade_value_24H'])
 
     buy_flag = False
 
     while buy_flag == False:
-        if vol >=10000000000.0 :
-            all = pybithumb.get_current_price("ALL")
-            sort_all = sorted(all.items(), key=lambda x: float(x[1]['fluctate_rate_24H']), reverse=True)
-
-            for ticker, data in sort_all:
+        all = pybithumb.get_current_price("ALL")
+        if all is None:
+            break
+        sort_all = sorted(all.items(), key=lambda x: float(x[1]['fluctate_rate_24H']), reverse=True)
+        for ticker, data in sort_all:
+            vol[ticker] = float(data['acc_trade_value_24H'])
+            if vol[ticker] >= 13000000000.0:
                 diff = (float(data['closing_price']) - float(prev_dict[ticker])) / float(prev_dict[ticker]) * 100
                 if diff >= ascent:
-                    buy = [str(datetime.now()), ticker, float(prev_dict[ticker]), float(data['closing_price']),
-                           float('%.2f' % diff)]
+                    buy = [str(datetime.now()), ticker, float(prev_dict[ticker]), float(data['closing_price']), float('%.2f' % diff)]
+                    ## / 구매시간 / 티커 / 시가 / 종가 / 상승률 /
                     print('BUY ', buy)
                     buy_flag = True
-                    break;
-
-                prev_dict[ticker] = data['closing_price']
-
-            time.sleep(cycle_time)
-            buy_sec += cycle_time
+                    break
+        prev_dict[ticker] = data['closing_price']
+        time.sleep(cycle_time)
+        buy_sec += cycle_time
 
     # 팔기 로직
     sell_flag = False
@@ -58,6 +58,8 @@ while True:
     while sell_flag == False:
         buy_ticker = buy[1]
         current_price = pybithumb.get_current_price(buy_ticker)
+        if current_price is None:
+            break
         yield_rate = (current_price - buy_price) / buy_price * 100
 
         if (yield_rate >= sell_ascent):
@@ -82,7 +84,7 @@ while True:
         sell_sec += sell_cycle_time
 
     count_deal += 1
-    current_balance = balance + (current_price - buy_price) * (balance / buy_price)
+    current_balance = (balance + (current_price - buy_price) * (balance / buy_price)) - (balance * 0.001)
     rate = (current_balance - init_balance) / init_balance * 100
     print(count_deal, "Current Balance : ", float('%.2f' % current_balance), "(", float('%.2f' % rate), "% )")
     balance = current_balance
